@@ -7,6 +7,7 @@ COLLECTION_NAME = "notes"
 NOTES_FOLDER = os.path.join(os.path.expanduser("~/Downloads"), "my_notes")
 
 def main():
+    inverted_index = {}
     store_files = input("Process files? (type \"yes\"): ").strip()
     if store_files == "yes":            
         if not os.path.exists(NOTES_FOLDER):
@@ -15,7 +16,7 @@ def main():
             return
 
         processor = file_processer(notes_dir=NOTES_FOLDER, db_name=DB_NAME, collection_name=COLLECTION_NAME)
-        processor.process_and_store()
+        inverted_index = processor.process_and_store()
 
     searcher = file_searcher(db_name=DB_NAME, collection_name=COLLECTION_NAME)
 
@@ -27,7 +28,10 @@ def main():
         if not query:
             continue
         
-        response_data = searcher.search(query = query)
+        semantic_data = searcher.semantic_search(query = query)
+        inverted_data = searcher.inverted_search(query = query, inverted_index = inverted_index)
+
+        response_data = searcher.hybrid_search(semantic_data = semantic_data, inverted_data = inverted_data)
 
         if not response_data:
             print("No relevant materials found!")
@@ -42,8 +46,17 @@ def main():
             score = match.get("score", 0.0)
             text = match.get("text", "").strip()
 
-            print(f"\n[Result {idx}] Source: {source_file} (Similarity Score: {score:.3f})")
-            
+            print(
+                f"\n[Result {idx}] Source: {source_file} "
+                f"(Hybrid: {score:.3f} | "
+                f"Semantic: {match.get('semantic_score', 0.0):.3f} | "
+                f"Keyword: {match.get('keyword_score', 0.0):.3f})"
+            )
+
+            print("Semantic:", len(semantic_data))
+            print("Inverted:", len(inverted_data))
+            print("Hybrid:", len(response_data))
+                        
             print("-" * 50)
             print(text)
 

@@ -1,9 +1,10 @@
 import glob 
 import os
+import pymongo
 from pathlib import Path
 from pypdf import PdfReader
-import pymongo
 from sentence_transformers import (SentenceTransformer)
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 class file_processer():
     def __init__(self, notes_dir, db_name, collection_name):
@@ -44,23 +45,43 @@ class file_processer():
 
     def process_and_store(self):
         files = []
+        inverted_index = {}
+
         file_list = self.get_files()
+
         for file_path in file_list:
             file_name = os.path.basename(file_path)
             file_text = self.extract_text(file_path)
             chunked_file = self.chunk_text(file_text)
-            for ind, chunk in enumerate(chunked_file):
+            for chunk_id, chunk in enumerate(chunked_file):
                 vector = self.model.encode(chunk).tolist()
+                words = chunk.lower().split()
+
+                for word in words:
+                    if word in ENGLISH_STOP_WORDS:
+                        continue
+
+                    if word not in inverted_index:
+                        inverted_index[word] = set()
+
+                    inverted_index[word].add((file_name, chunk_id))
+
+                # OUTSIDE the word loop
                 doc = {
-                    "file_name" : file_name,
-                    "chunk_id" : ind,
-                    "text" : chunk,
-                    "embedding" : vector
-                    }
+                    "file_name": file_name,
+                    "chunk_id": chunk_id,
+                    "text": chunk,
+                    "embedding": vector
+                }
+
                 files.append(doc)
-        if not files: 
+
+        if not files:
             return
+
         self.collection.insert_many(files)
+
+        return inverted_index
                 
     
 
