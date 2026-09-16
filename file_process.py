@@ -1,6 +1,7 @@
 import glob 
 import os
 import pymongo
+import re
 from pathlib import Path
 from pypdf import PdfReader
 from sentence_transformers import (SentenceTransformer)
@@ -55,7 +56,7 @@ class file_processer():
             chunked_file = self.chunk_text(file_text)
             for chunk_id, chunk in enumerate(chunked_file):
                 vector = self.model.encode(chunk).tolist()
-                words = chunk.lower().split()
+                words = re.findall(r"\b[a-zA-Z0-9]+\b", chunk.lower())
 
                 for word in words:
                     if word in ENGLISH_STOP_WORDS:

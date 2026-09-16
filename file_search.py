@@ -1,6 +1,8 @@
 import pymongo
+import re
 from sentence_transformers import (SentenceTransformer)
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 class file_searcher():
     def __init__(self, db_name, collection_name):
@@ -41,8 +43,13 @@ class file_searcher():
         if not inverted_index:
             return []
 
-        query_words = query.lower().split()
+        query_words = re.findall(r"\b[a-zA-Z0-9]+\b", query.lower())
 
+        query_words = [
+            word for word in query_words
+            if word not in ENGLISH_STOP_WORDS
+        ]
+        
         chunk_scores = {}
 
         for word in query_words:
@@ -83,7 +90,6 @@ class file_searcher():
                     "text": doc["text"],
                     "score": score
                 })
-
         return results
 
     def hybrid_search(self, semantic_data, inverted_data, snippets=5):
@@ -125,5 +131,5 @@ class file_searcher():
             key=lambda x: x["score"],
             reverse=True
         )
-
+        
         return ranked_results[:snippets]

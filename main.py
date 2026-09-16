@@ -52,10 +52,6 @@ def main():
                 f"Semantic: {match.get('semantic_score', 0.0):.3f} | "
                 f"Keyword: {match.get('keyword_score', 0.0):.3f})"
             )
-
-            print("Semantic:", len(semantic_data))
-            print("Inverted:", len(inverted_data))
-            print("Hybrid:", len(response_data))
                         
             print("-" * 50)
             print(text)
